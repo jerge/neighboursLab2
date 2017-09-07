@@ -13,6 +13,7 @@ import java.util.Random;
 import static java.lang.Math.round;
 import static java.lang.Math.sqrt;
 import static java.lang.System.*;
+import static oracle.jrockit.jfr.events.Bits.intValue;
 
 /*
  *  Program to simulate segregation.
@@ -37,6 +38,8 @@ public class Neighbours extends Application {
         NA,        // Not applicable (NA), used for NONEs
         SATISFIED
     }
+
+    final Random rand = new Random();
 
     // Below is the *only* accepted instance variable (i.e. variables outside any method)
     // This variable is accessible from any method
@@ -63,6 +66,9 @@ public class Neighbours extends Application {
         int nLocations = 900;
 
         // TODO find methods that does the job
+        Actor[] actors = generateDistribution(nLocations, dist[0], dist[1]);
+        actors = shuffle(actors);
+        world = toMatrix(actors);
         // ...
         // world =           // Finally set world variable
     }
@@ -76,6 +82,100 @@ public class Neighbours extends Application {
     // ----------- Utility methods -----------------
 
     // TODO need any utilities add here (= methods possible reusable for other programs)
+
+    private Actor[] generateDistribution(int amount, double probRed, double probBlue) {
+        Actor[] distActors = new Actor[amount];
+        double amountRed = StrictMath.round(amount * probRed);
+        double amountBlue = StrictMath.round(amount * probBlue);
+        for (int i = 0; i < amount; i++) {
+            if (i < amountRed) {
+                distActors[i] = Actor.RED;
+            } else if ( i < amountRed + amountBlue){
+                distActors[i] = Actor.BLUE;
+            } else {
+                distActors[i] = Actor.NONE;
+            }
+        }
+        return distActors;
+    }
+
+    private Actor[] shuffle(Actor[] arr) {
+        int index;
+        Actor a;
+        for (int i = 0; i < arr.length;i++) {
+            index = rand.nextInt(arr.length);
+            a = arr[i];
+            arr[i] = arr[index];
+            arr[index] = a;
+        }
+        return arr;
+    }
+
+    private Actor[][] toMatrix(Actor[] arr) {
+        int length = intValue(Math.sqrt(arr.length));
+        Actor[][] matrix = new Actor[arr.length/length][length];
+        int count = 0;
+        for (int a = 0; a < arr.length/length; a++) {
+            for (int b = 0; b < length; b++){
+                matrix[a][b] = arr[count];
+                count++;
+            }
+        }
+        return matrix;
+    }
+
+    private boolean isNeighbourSameColour(Actor[][] matrix, int offsetY, int offsetX, int row, int col, Actor colour){
+        if (offsetX == 0 && offsetY == 0) {
+            return false;
+        }
+        if (row + offsetY >= 0 && row + offsetY < matrix.length){
+            if (col + offsetX >= 0 && col + offsetX < matrix[offsetY+1].length){
+                if (matrix[row+offsetY][col+offsetX] == colour) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private int amountAliveNeighbours(Actor[][] matrix, int row, int col){
+        int amount = 0;
+        for(int offsetY = -1; offsetY < 2;offsetY++){
+            for(int offsetX = -1; offsetX < 2;offsetX++){
+                if (isNeighbourSameColour(matrix, offsetY, offsetX, row, col)) {
+                    amount += 1;
+                }
+            }
+        }
+        return amount;
+    }
+
+    private int[][] cellNeighbourValues() {
+        int[][] neighbourValues = new int[world.length][world[0].length];
+        for (int row = 0; row < world.length; row++) {
+            for (int col = 0; col < world[row].length; col++) {
+                neighbourValues[row][col] = amountAliveNeighbours(world,row,col);
+            }
+        }
+        return neighbourValues;
+    }
+
+    private Actor rulebook(Actor actorState, int neighbours) {
+        if (actorState == Actor.RED && (neighbours < 2 || neighbours > 3)) {
+            return Actor.BLUE;
+        } else if (cellState == Cell.DEAD && neighbours == 3) {
+            return Cell.ALIVE;
+        }
+        return cellState;
+    }
+
+    private void applyRules(int[][] neighbourValues) {
+        for (int row = 0; row < world.length; row++) {
+            for (int col = 0; col < world[row].length; col++) {
+                world[row][col] = rulebook(world[row][col], neighbourValues[row][col]);
+            }
+        }
+    }
 
     // ------- Testing -------------------------------------
 
