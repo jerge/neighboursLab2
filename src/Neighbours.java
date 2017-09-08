@@ -49,7 +49,7 @@ public class Neighbours extends Application {
     void updateWorld() {
         // % of surrounding neighbours that are like me
         final double threshold = 0.7;
-
+        teleportAll(actorSatisfaction(threshold));
         // TODO add methods
     }
 
@@ -74,10 +74,10 @@ public class Neighbours extends Application {
     }
 
     // Check if inside world
-    boolean isValidLocation(int size, int row, int col) {
-        // TODO
-        return false;
-    }
+//    boolean isValidLocation(int size, int row, int col) {
+//        // TODO
+//        return false;
+//    }
 
     // ----------- Utility methods -----------------
 
@@ -124,81 +124,126 @@ public class Neighbours extends Application {
         return matrix;
     }
 
-    private boolean isNeighbourSameColour(Actor[][] matrix, int offsetY, int offsetX, int row, int col, Actor colour){
+    private Actor neighbourColour(int offsetY, int offsetX, int row, int col){
         if (offsetX == 0 && offsetY == 0) {
-            return false;
+            return Actor.NONE;
         }
-        if (row + offsetY >= 0 && row + offsetY < matrix.length){
-            if (col + offsetX >= 0 && col + offsetX < matrix[offsetY+1].length){
-                if (matrix[row+offsetY][col+offsetX] == colour) {
-                    return true;
-                }
+        if (row + offsetY >= 0 && row + offsetY < world.length){
+            if (col + offsetX >= 0 && col + offsetX < world[offsetY+1].length){
+                return (world[row+offsetY][col+offsetX]);
             }
         }
-        return false;
+        return Actor.NONE;
     }
 
-    private int amountAliveNeighbours(Actor[][] matrix, int row, int col){
+    private double percentageSameNeighbours(int row, int col, Actor colour){
+        // Returns a value out of regular possible values
+        if (colour == Actor.NONE) {
+            return 2.0;
+        }
         int amount = 0;
+        int total = 0;
         for(int offsetY = -1; offsetY < 2;offsetY++){
             for(int offsetX = -1; offsetX < 2;offsetX++){
-                if (isNeighbourSameColour(matrix, offsetY, offsetX, row, col)) {
+                if (neighbourColour(offsetY, offsetX, row, col) == colour) {
                     amount += 1;
+                    total += 1;
+                } else if (neighbourColour(offsetY, offsetX, row, col) != Actor.NONE) {
+                    total += 1;
                 }
             }
         }
-        return amount;
+        if (total == 0) {
+            return 1.0;
+        }
+        return (double)amount/total;
     }
 
-    private int[][] cellNeighbourValues() {
-        int[][] neighbourValues = new int[world.length][world[0].length];
+    private State isActorSatisfied(int row, int col, Actor colour, double threshold) {
+        if (percentageSameNeighbours(row,col,colour) > 1.0) {
+            return State.NA;
+        } else if (percentageSameNeighbours(row,col,colour) >= threshold) {
+            return State.SATISFIED;
+        } else {
+            return State.UNSATISFIED;
+        }
+    }
+
+    private State[][] actorSatisfaction(double threshold) {
+        State[][] worldSatisfaction = new State[world.length][world[0].length];
         for (int row = 0; row < world.length; row++) {
             for (int col = 0; col < world[row].length; col++) {
-                neighbourValues[row][col] = amountAliveNeighbours(world,row,col);
+                worldSatisfaction[row][col] = isActorSatisfied(row, col, world[row][col], threshold);
             }
         }
-        return neighbourValues;
+        return worldSatisfaction;
     }
+//
+//    private Actor rulebook(Actor actorState, int neighbours) {
+//        if (actorState == Actor.RED && (neighbours < 2 || neighbours > 3)) {
+//            return Actor.BLUE;
+//        } else if (cellState == Cell.DEAD && neighbours == 3) {
+//            return Cell.ALIVE;
+//        }
+//        return cellState;
+//    }
+//
+//    private void applyRules(int[][] neighbourValues) {
+//        for (int row = 0; row < world.length; row++) {
+//            for (int col = 0; col < world[row].length; col++) {
+//                world[row][col] = rulebook(world[row][col], neighbourValues[row][col]);
+//            }
+//        }
+//    }
 
-    private Actor rulebook(Actor actorState, int neighbours) {
-        if (actorState == Actor.RED && (neighbours < 2 || neighbours > 3)) {
-            return Actor.BLUE;
-        } else if (cellState == Cell.DEAD && neighbours == 3) {
-            return Cell.ALIVE;
+    private void switcheroo(State[][] worldSatisfaction, int row, int col) {
+        int x;
+        int y;
+        Actor temp = world[row][col];
+        if (worldSatisfaction[row][col] != State.SATISFIED) {
+            do {
+                x = rand.nextInt(29);
+                y = rand.nextInt(29);
+            } while (worldSatisfaction[x][y] != State.SATISFIED || (row == y && col == x));
+            world[row][col] = world[y][x];
+            world[y][x] = temp;
         }
-        return cellState;
     }
 
-    private void applyRules(int[][] neighbourValues) {
+    private void teleportAll(State[][] worldSatisfaction) {
+        int index;
+        Actor a;
         for (int row = 0; row < world.length; row++) {
             for (int col = 0; col < world[row].length; col++) {
-                world[row][col] = rulebook(world[row][col], neighbourValues[row][col]);
+                switcheroo(worldSatisfaction, row, col);
             }
         }
     }
+
+
 
     // ------- Testing -------------------------------------
 
     // Here you run your tests i.e. call your logic methods
     // to see that they really work
-    void test(){
-        // A small hard coded world for testing
-        world = new Actor[][]{
-                {Actor.RED, Actor.RED, Actor.NONE},
-                {Actor.NONE, Actor.BLUE, Actor.NONE},
-                {Actor.RED, Actor.NONE, Actor.BLUE}
-        };
-        double th = 0.5;   // Simple threshold used for testing
-
-        // A first test!
-        int s = world.length;
-        out.println(isValidLocation(s, 0, 0));
-
-
-        /* Move of unsatisfied hard to test because of random */
-
-        exit(0);
-    }
+//    void test(){
+//        // A small hard coded world for testing
+//        world = new Actor[][]{
+//                {Actor.RED, Actor.RED, Actor.NONE},
+//                {Actor.NONE, Actor.BLUE, Actor.NONE},
+//                {Actor.RED, Actor.NONE, Actor.BLUE}
+//        };
+//        double th = 0.5;   // Simple threshold used for testing
+//
+//        // A first test!
+//        int s = world.length;
+//        out.println(isValidLocation(s, 0, 0));
+//
+//
+//        /* Move of unsatisfied hard to test because of random */
+//
+//        exit(0);
+//    }
 
     // ---- NOTHING to do below this row, it's JavaFX stuff  ----
 
