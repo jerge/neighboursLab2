@@ -63,7 +63,7 @@ public class Neighbours extends Application {
         // %-distribution of RED, BLUE and NONE
         double[] dist = {0.25, 0.25, 0.50};
         // Number of locations (places) in world (square)
-        int nLocations = 900;
+        int nLocations = 1600;
 
         // TODO find methods that does the job
         Actor[] actors = generateDistribution(nLocations, dist[0], dist[1]);
@@ -129,7 +129,7 @@ public class Neighbours extends Application {
             return Actor.NONE;
         }
         if (row + offsetY >= 0 && row + offsetY < world.length){
-            if (col + offsetX >= 0 && col + offsetX < world[offsetY+1].length){
+            if (col + offsetX >= 0 && col + offsetX < world[0].length){
                 return (world[row+offsetY][col+offsetX]);
             }
         }
@@ -178,41 +178,24 @@ public class Neighbours extends Application {
         }
         return worldSatisfaction;
     }
-//
-//    private Actor rulebook(Actor actorState, int neighbours) {
-//        if (actorState == Actor.RED && (neighbours < 2 || neighbours > 3)) {
-//            return Actor.BLUE;
-//        } else if (cellState == Cell.DEAD && neighbours == 3) {
-//            return Cell.ALIVE;
-//        }
-//        return cellState;
-//    }
-//
-//    private void applyRules(int[][] neighbourValues) {
-//        for (int row = 0; row < world.length; row++) {
-//            for (int col = 0; col < world[row].length; col++) {
-//                world[row][col] = rulebook(world[row][col], neighbourValues[row][col]);
-//            }
-//        }
-//    }
 
     private void switcheroo(State[][] worldSatisfaction, int row, int col) {
         int x;
         int y;
+
         Actor temp = world[row][col];
-        if (worldSatisfaction[row][col] != State.SATISFIED) {
+        if (worldSatisfaction[row][col] == State.UNSATISFIED) {
             do {
-                x = rand.nextInt(29);
-                y = rand.nextInt(29);
-            } while (worldSatisfaction[x][y] != State.SATISFIED || (row == y && col == x));
+                x = rand.nextInt(world.length-1);
+                y = rand.nextInt(world.length-1);
+            } while (worldSatisfaction[y][x] != State.NA || (row == y && col == x));
             world[row][col] = world[y][x];
             world[y][x] = temp;
+
         }
     }
 
     private void teleportAll(State[][] worldSatisfaction) {
-        int index;
-        Actor a;
         for (int row = 0; row < world.length; row++) {
             for (int col = 0; col < world[row].length; col++) {
                 switcheroo(worldSatisfaction, row, col);
