@@ -44,6 +44,7 @@ public class Neighbours extends Application {
     // Below is the *only* accepted instance variable (i.e. variables outside any method)
     // This variable is accessible from any method
     Actor[][] world;              // The world is a square matrix of Actors
+    int counter = 0;
 
     // This is the method called by the timer to update the world approx each 1/60 sec.
     void updateWorld() {
@@ -63,12 +64,13 @@ public class Neighbours extends Application {
         // %-distribution of RED, BLUE and NONE
         double[] dist = {0.25, 0.25, 0.50};
         // Number of locations (places) in world (square)
-        int nLocations = 1600;
+        int nLocations = 0;
 
         // TODO find methods that does the job
         Actor[] actors = generateDistribution(nLocations, dist[0], dist[1]);
         actors = shuffle(actors);
         world = toMatrix(actors);
+        changeBlobSize();
         // ...
         // world =           // Finally set world variable
     }
@@ -83,7 +85,15 @@ public class Neighbours extends Application {
 
     // TODO need any utilities add here (= methods possible reusable for other programs)
 
+
+    private void changeBlobSize() {
+        while (blobSize*world.length+100 > 1000 && blobSize > 1) {
+            blobSize--;
+        }
+    }
+
     private Actor[] generateDistribution(int amount, double probRed, double probBlue) {
+        amount = (int)(sqrt(amount))*(int)(sqrt(amount));
         Actor[] distActors = new Actor[amount];
         double amountRed = StrictMath.round(amount * probRed);
         double amountBlue = StrictMath.round(amount * probBlue);
@@ -172,7 +182,7 @@ public class Neighbours extends Application {
     private State[][] actorSatisfaction(double threshold) {
         State[][] worldSatisfaction = new State[world.length][world[0].length];
         for (int row = 0; row < world.length; row++) {
-            for (int col = 0; col < world[row].length; col++) {
+            for (int col = 0; col < world[0].length; col++) {
                 worldSatisfaction[row][col] = isActorSatisfied(row, col, world[row][col], threshold);
             }
         }
@@ -182,12 +192,11 @@ public class Neighbours extends Application {
     private void switcheroo(State[][] worldSatisfaction, int row, int col) {
         int x;
         int y;
-
         Actor temp = world[row][col];
         if (worldSatisfaction[row][col] == State.UNSATISFIED) {
             do {
-                x = rand.nextInt(world.length-1);
-                y = rand.nextInt(world.length-1);
+                x = rand.nextInt(world[0].length);
+                y = rand.nextInt(world.length);
             } while (worldSatisfaction[y][x] != State.NA || (row == y && col == x));
             world[row][col] = world[y][x];
             world[y][x] = temp;
@@ -197,7 +206,7 @@ public class Neighbours extends Application {
 
     private void teleportAll(State[][] worldSatisfaction) {
         for (int row = 0; row < world.length; row++) {
-            for (int col = 0; col < world[row].length; col++) {
+            for (int col = 0; col < world[0].length; col++) {
                 switcheroo(worldSatisfaction, row, col);
             }
         }
@@ -229,18 +238,17 @@ public class Neighbours extends Application {
 //    }
 
     // ---- NOTHING to do below this row, it's JavaFX stuff  ----
-
-    final int width = 400;   // Size for window
-    final int height = 400;
+    int blobSize = 10;
     long previousTime = nanoTime();
-    final long INTERVAL = 450000000;
+    final long INTERVAL = 45000000;
 
     @Override
+
     public void start(Stage primaryStage) throws Exception {
 
         // Build a scene graph
         Group root = new Group();
-        Canvas canvas = new Canvas(width, height);
+        Canvas canvas = new Canvas(world.length*blobSize+100, world.length*blobSize+100);
         root.getChildren().addAll(canvas);
         GraphicsContext gc = canvas.getGraphicsContext2D();
 
@@ -268,12 +276,12 @@ public class Neighbours extends Application {
 
     // Render the state of the world to the screen
     public void renderWorld(GraphicsContext g) {
-        g.clearRect(0,0, width, height);
+        g.clearRect(0,0, world.length*blobSize+100, world.length*blobSize+100);
         int size = world.length;
         for (int row = 0; row < size; row++) {
             for (int col = 0; col < size; col++) {
-                int x = 10 * col + 50;
-                int y = 10 * row + 50;
+                int x = blobSize * col + 50;
+                int y = blobSize * row + 50;
 
                 if (world[row][col] == Actor.RED) {
                     g.setFill(Color.RED);
@@ -282,7 +290,7 @@ public class Neighbours extends Application {
                 } else {
                     g.setFill(Color.WHITE);
                 }
-                g.fillOval(x, y, 10, 10);
+                g.fillOval(x, y, blobSize, blobSize);
             }
         }
     }
