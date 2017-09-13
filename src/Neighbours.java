@@ -64,7 +64,7 @@ public class Neighbours extends Application {
         // %-distribution of RED, BLUE and NONE
         double[] dist = {0.25, 0.25, 0.50};
         // Number of locations (places) in world (square)
-        int nLocations = 0;
+        int nLocations = 900000;
 
         // TODO find methods that does the job
         Actor[] actors = generateDistribution(nLocations, dist[0], dist[1]);
