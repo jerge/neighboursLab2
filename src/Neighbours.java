@@ -64,7 +64,7 @@ public class Neighbours extends Application {
         // %-distribution of RED, BLUE and NONE
         double[] dist = {0.25, 0.25, 0.50};
         // Number of locations (places) in world (square)
-        int nLocations = 900000;
+        int nLocations = 900;
 
         // TODO find methods that does the job
         Actor[] actors = generateDistribution(nLocations, dist[0], dist[1]);
@@ -284,9 +284,9 @@ public class Neighbours extends Application {
                 int y = blobSize * row + 50;
 
                 if (world[row][col] == Actor.RED) {
-                    g.setFill(Color.RED);
+                    g.setFill(Color.ORANGE);
                 } else if (world[row][col] == Actor.BLUE) {
-                    g.setFill(Color.BLUE);
+                    g.setFill(Color.TURQUOISE);
                 } else {
                     g.setFill(Color.WHITE);
                 }
